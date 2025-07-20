@@ -215,7 +215,9 @@ def book_appointment(request: AppointmentRequest, authorization: str = Header(..
         }
     )
 
-# GET /appointments
+
+
+# GET /appointmentss
 @app.get("/appointments", response_model=List[AppointmentOut])
 def get_all_appointments(authorization: str = Header(...)):
     if authorization != f"Bearer {SECRET_TOKEN}":

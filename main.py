@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from sqlalchemy import create_engine, Column, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from typing import List
 import uuid
 import os
 import logging
@@ -14,25 +15,25 @@ logging.basicConfig(level=logging.INFO)
 
 app = FastAPI()
 
-# CORS middleware to allow frontend like Vapi to connect
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Use ["https://studio.vapi.ai"] for production
+    allow_origins=["*"],  # Allow all origins for now
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Secret token from environment variable (set this in Render dashboard)
+# Secret token (use Render dashboard to set "secret_key")
 SECRET_TOKEN = os.getenv("secret_key", "default_token")
 
-# SQLite database setup
+# SQLite DB config
 DATABASE_URL = "sqlite:///./appointments.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Base = declarative_base()
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(bind=engine)
 
-# Database model
+# SQLAlchemy model
 class Appointment(Base):
     __tablename__ = "appointments"
     appointment_id = Column(String, primary_key=True, index=True)
@@ -41,39 +42,41 @@ class Appointment(Base):
     time = Column(String)
     service = Column(String)
 
-# Create table if not exists
+# Create table
 Base.metadata.create_all(bind=engine)
 
-# Pydantic models for request and response
+# Request model
 class AppointmentRequest(BaseModel):
     name: str
     date: str
     time: str
     service: str
 
+# Response model for booking
 class AppointmentResponse(BaseModel):
     success: bool
     message: str
     appointment_id: str
 
-# Endpoint to book appointment
+# Response model for GET /appointments
+class AppointmentOut(BaseModel):
+    appointment_id: str
+    name: str
+    date: str
+    time: str
+    service: str
+
+# POST /book endpoint
 @app.post("/book", response_model=AppointmentResponse)
-def book_appointment(
-    request: AppointmentRequest,
-    authorization: str = Header(...)
-):
-    # Logging the request
+def book_appointment(request: AppointmentRequest, authorization: str = Header(...)):
     logging.info(f"Request: {request.dict()}")
     logging.info(f"Authorization: {authorization}")
 
-    # Validate the token
     if authorization != f"Bearer {SECRET_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    # Generate appointment ID
     appointment_id = str(uuid.uuid4())
 
-    # Save to database
     db = SessionLocal()
     appointment = Appointment(
         appointment_id=appointment_id,
@@ -86,7 +89,6 @@ def book_appointment(
     db.commit()
     db.close()
 
-    # Return the response
     return JSONResponse(
         content={
             "success": True,
@@ -94,9 +96,9 @@ def book_appointment(
             "appointment_id": appointment_id
         }
     )
-from typing import List
 
-@app.get("/appointments", response_model=List[AppointmentRequest])
+# GET /appointments endpoint
+@app.get("/appointments", response_model=List[AppointmentOut])
 def get_all_appointments(authorization: str = Header(...)):
     if authorization != f"Bearer {SECRET_TOKEN}":
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -104,4 +106,13 @@ def get_all_appointments(authorization: str = Header(...)):
     db = SessionLocal()
     appointments = db.query(Appointment).all()
     db.close()
-    return appointments
+
+    return [
+        AppointmentOut(
+            appointment_id=a.appointment_id,
+            name=a.name,
+            date=a.date,
+            time=a.time,
+            service=a.service
+        ) for a in appointments
+    ]

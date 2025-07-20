@@ -56,10 +56,10 @@ def book_appointment(
     db = SessionLocal()
     appointment = Appointment(
         appointment_id=appointment_id,
-        name=request.customer_name,
-        date=request.appointment_date,
-        time=request.appointment_time,
-        service=request.service_type
+        name=request.name,
+        date=request.date,
+        time=request.time,
+        service=request.service
     )
     db.add(appointment)
     db.commit()

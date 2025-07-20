@@ -94,3 +94,14 @@ def book_appointment(
             "appointment_id": appointment_id
         }
     )
+from typing import List
+
+@app.get("/appointments", response_model=List[AppointmentRequest])
+def get_all_appointments(authorization: str = Header(...)):
+    if authorization != f"Bearer {SECRET_TOKEN}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    db = SessionLocal()
+    appointments = db.query(Appointment).all()
+    db.close()
+    return appointments

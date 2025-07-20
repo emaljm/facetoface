@@ -33,7 +33,7 @@ class AppointmentRequest(BaseModel):
     name: str
     date: str
     time: str
-    type: str
+    service: str
 
 # Response schema
 class AppointmentResponse(BaseModel):

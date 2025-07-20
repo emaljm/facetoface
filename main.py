@@ -25,7 +25,7 @@ app.add_middleware(
 )
 
 # Secret token (use Render dashboard to set "secret_key")
-SECRET_TOKEN = os.getenv("secret_key", "default_token")
+SECRET_TOKEN = os.getenv("Bearer secret_key", "default_token")
 
 # SQLite DB config
 DATABASE_URL = "sqlite:///./appointments.db"

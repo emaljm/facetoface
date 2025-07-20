@@ -21,19 +21,19 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 class Appointment(Base):
     __tablename__ = "appointments"
     appointment_id = Column(String, primary_key=True, index=True)
-    customer_name = Column(String)
-    appointment_date = Column(String)
-    appointment_time = Column(String)
-    service_type = Column(String)
+    name = Column(String)
+    date = Column(String)
+    time = Column(String)
+    service = Column(String)
 
 Base.metadata.create_all(bind=engine)
 
 # Request schema
 class AppointmentRequest(BaseModel):
-    customer_name: str
-    appointment_date: str
-    appointment_time: str
-    service_type: str
+    name: str
+    date: str
+    time: str
+    type: str
 
 # Response schema
 class AppointmentResponse(BaseModel):

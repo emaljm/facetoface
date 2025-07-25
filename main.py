@@ -192,7 +192,19 @@ def cancel_appointment(
         }
     )
 #reschedule
+from typing import Optional
 
+# Pydantic model for reschedule request and response
+class RescheduleRequest(BaseModel):
+    appointment_id: str
+    name: Optional[str] = None
+    date: Optional[str] = None
+    time: Optional[str] = None
+    service: Optional[str] = None
+class RescheduleResponse(BaseModel):
+    success: bool
+    message: str
+    updated_details: dict | None = None
 
 @app.post("/reschedule", response_model=RescheduleResponse)
 def reschedule_appointment(

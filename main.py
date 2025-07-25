@@ -191,3 +191,68 @@ def cancel_appointment(
             "message": "Appointment cancelled successfully."
         }
     )
+#reschedule
+
+
+@app.post("/reschedule", response_model=RescheduleResponse)
+def reschedule_appointment(
+    request: RescheduleRequest,
+    authorization: str = Header(...)
+):
+    logging.info(f"Reschedule Request: {request.dict()}")
+    logging.info(f"Authorization: {authorization}")
+
+    if authorization != f"Bearer {SECRET_TOKEN}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    db = SessionLocal()
+    appointment = db.query(Appointment).filter(Appointment.appointment_id == request.appointment_id).first()
+
+    # Just in case — fail silently if not found
+    if not appointment:
+        db.close()
+        return JSONResponse(
+            content={
+                "success": False,
+                "message": "Something went wrong. Could not update.",
+                "updated_details": None
+            }
+        )
+
+    # Update only the fields provided
+    updated_fields = {}
+    if request.name is not None:
+        appointment.name = request.name
+        updated_fields["name"] = request.name
+    else:
+        updated_fields["name"] = appointment.name
+
+    if request.date is not None:
+        appointment.date = request.date
+        updated_fields["date"] = request.date
+    else:
+        updated_fields["date"] = appointment.date
+
+    if request.time is not None:
+        appointment.time = request.time
+        updated_fields["time"] = request.time
+    else:
+        updated_fields["time"] = appointment.time
+
+    if request.service is not None:
+        appointment.service = request.service
+        updated_fields["service"] = request.service
+    else:
+        updated_fields["service"] = appointment.service
+
+    db.commit()
+    db.refresh(appointment)
+    db.close()
+
+    return JSONResponse(
+        content={
+            "success": True,
+            "message": "Appointment updated successfully.",
+            "updated_details": updated_fields
+        }
+    )

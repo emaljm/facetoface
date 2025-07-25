@@ -71,8 +71,8 @@ def book_appointment(
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     # Generate appointment ID
-    appointment_id = str(uuid.uuid4())
-
+    # appointment_id = str(uuid.uuid4())
+    appointment_id = 12345
     # Save to database
     db = SessionLocal()
     appointment = Appointment(

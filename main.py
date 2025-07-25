@@ -94,3 +94,55 @@ def book_appointment(
             "appointment_id": appointment_id
         }
     )
+
+
+
+
+#check
+
+# Pydantic model for checking appointment
+class CheckRequest(BaseModel):
+    appointment_id: str
+
+class CheckResponse(BaseModel):
+    success: bool
+    message: str
+    appointment_details: dict | None = None
+
+# Endpoint to check appointment
+@app.post("/check", response_model=CheckResponse)
+def check_appointment(
+    request: CheckRequest,
+    authorization: str = Header(...)
+):
+    logging.info(f"Check Request: {request.dict()}")
+    logging.info(f"Authorization: {authorization}")
+
+    if authorization != f"Bearer {SECRET_TOKEN}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    db = SessionLocal()
+    appointment = db.query(Appointment).filter(Appointment.appointment_id == request.appointment_id).first()
+    db.close()
+
+    if not appointment:
+        return JSONResponse(
+            content={
+                "success": False,
+                "message": "Appointment not found.",
+                "appointment_details": None
+            }
+        )
+
+    return JSONResponse(
+        content={
+            "success": True,
+            "message": "Appointment found.",
+            "appointment_details": {
+                "name": appointment.name,
+                "date": appointment.date,
+                "time": appointment.time,
+                "service": appointment.service
+            }
+        }
+    )

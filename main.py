@@ -146,3 +146,48 @@ def check_appointment(
             }
         }
     )
+
+
+#cancel
+# Pydantic model for cancel request and response
+class CancelRequest(BaseModel):
+    appointment_id: str
+
+class CancelResponse(BaseModel):
+    success: bool
+    message: str
+
+# Endpoint to cancel appointment
+@app.post("/cancel", response_model=CancelResponse)
+def cancel_appointment(
+    request: CancelRequest,
+    authorization: str = Header(...)
+):
+    logging.info(f"Cancel Request: {request.dict()}")
+    logging.info(f"Authorization: {authorization}")
+
+    if authorization != f"Bearer {SECRET_TOKEN}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    db = SessionLocal()
+    appointment = db.query(Appointment).filter(Appointment.appointment_id == request.appointment_id).first()
+
+    if not appointment:
+        db.close()
+        return JSONResponse(
+            content={
+                "success": False,
+                "message": "Appointment not found."
+            }
+        )
+
+    db.delete(appointment)
+    db.commit()
+    db.close()
+
+    return JSONResponse(
+        content={
+            "success": True,
+            "message": "Appointment cancelled successfully."
+        }
+    )
